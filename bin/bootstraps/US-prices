@@ -1,0 +1,60 @@
+#!/bin/bash
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
+# START_YEAR
+#
+# Description: bootstraps US database, creates
+# fresh from schema, downloads symbols, imports
+# 
+#################################################
+
+#set -euo pipefail
+#because otherwise this never will work
+IFS=$'\n\t'
+
+. ../../yeodl.config
+
+DBDIR=${YEODLDIR}/dbs
+EXCHANGEDIR=${YEODLDIR}/exchanges
+DATE=`date +%F`
+
+
+STOCKS=`${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<"EOF" "select symbol from symbols order by symbol;" 
+EOF`
+for i in ${STOCKS}
+do
+    FILES+=( "${EXCHANGEDIR}/US/prices/byticker/${i}.csv")
+    STOCKS2+=( "${i}")
+done
+
+
+for (( j=0; j<${#FILES[*]}; ++j))
+do
+    URLFILES+=( "${FILES[$j]}" "http://eodhistoricaldata.com/api/eod/${STOCKS2[$j]}.US?api_token=${APIKEY}&from=${START_YEAR}-01-01")
+done
+
+
+# printf '%s\n' "${URLFILES[@]}" |
+#     xargs  -n 2 -P 8 wget -q  -O 
+
+echo "Downloaded, beginning insert"
+
+for (( j=0; j<${#FILES[*]}; ++j))
+do
+#echo "${FILES[$j]}"    
+${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${FILES[$j]}", header);
+begin transaction;
+insert or replace into prices
+(symbol, fdate, open, high, low, close, adjusted_close, volume)
+select "${STOCKS2[$j]}" as symbol, "date" as fdate, open, high, low, close, adjusted_close, volume
+       from temp.t1
+       where open is not null;
+commit;
+drop table temp.t1;
+EOF
+done
+

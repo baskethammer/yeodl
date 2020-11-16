@@ -1,0 +1,12 @@
+# any emacs save file
+*~
+*#
+
+# any database
+*.db
+
+# the config file [includes our apikey etc]
+yeodl.config
+
+# the exchanges directory
+exchanges/*

@@ -1,0 +1,235 @@
+#!/bin/bash
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
+# 
+#
+# Description: refresh fundamental data
+# 
+# 
+#################################################
+
+#set -euo pipefail
+#because otherwise this never will work
+IFS=$'\n\t'
+
+. ../yeodl.config
+
+DBDIR=${YEODLDIR}/dbs
+DB="${DBDIR}/US.db"
+EXCHANGEDIR=${YEODLDIR}/exchanges
+DATE=`date +%F`
+
+#
+# Get all the fundamental json files
+#
+
+STOCKS=`${YEODLDIR}/bin/sqlite3 ${DB} <<"EOF" "select symbol from symbols order by symbol;" 
+EOF`
+for i in ${STOCKS}
+do
+    FILES+=( "${EXCHANGEDIR}/US/fundamentals/${i}.json")
+    STOCKS2+=( "${i}")
+done
+
+
+for (( j=0; j<${#FILES[*]}; ++j))
+do
+    URLFILES+=( "${FILES[$j]}" "http://eodhistoricaldata.com/api/fundamentals/${STOCKS2[$j]}.US?api_token=${APIKEY}")
+done
+
+
+printf '%s\n' "${URLFILES[@]}" |
+    xargs  -n 2 -P 4 wget -q  -O 
+
+#####################################################
+#
+# For each type of data we want, jq the json
+# to create a csv, then load the csv
+#    1) Earnings (simple table of eps for last 20 quarters)
+#    2) Descriptive (name sector etc)
+#    3) Highlights (eps estimates etc)
+#    4) Valuation  (price/book, p/e etc)
+#    5) Share Stats (float, short shares etc)
+#    6) Technicals (moving averages of price, vol)
+#
+#####################################################
+
+#
+# (1/6) Create Earnings History
+#
+echo "\"symbol\",\"q1\",\"q2\",\"q3\",\"q4\",\"q5\",\"q6\",\"q7\",\"q8\",\"q9\",\"q10\",\"q11\",\"q12\",\"q13\",\"q14\",\"q15\",\"q16\",\"q17\",\"q18\",\"q19\",\"q20\"" > ${EXCHANGEDIR}/US/fundamentals/00earningshistory.csv
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 8  jq -r '[(.General.Code) , 
+    	      	       	 (.Earnings.History[]? 
+			  | select(.epsActual !=null) 
+			  | .epsActual)] 
+			  | @csv' >> ${EXCHANGEDIR}/US/fundamentals/00earningshistory.csv
+
+
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00earningshistory.csv", header);
+begin transaction;
+insert or replace into earnings_history
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF
+
+#
+# (2/6) Descriptive data
+#
+
+echo "\"Symbol\",\"Type\",\"Name\",\"Exchange\",\"Sector\",\"Industry\",\"WebURL\"" > ${EXCHANGEDIR}/US/fundamentals/00descriptions.csv
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 10 jq -r '[.General|
+	                   (.Code)   
+			   ,(.Type)
+			   ,(.Name)
+			   ,(.Exchange)
+			   ,(.Sector)
+			   ,(.Industry)
+			   ,(.WebURL)]| @csv' >> ${EXCHANGEDIR}/US/fundamentals/00descriptions.csv
+
+#TODO sql import
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00descriptions.csv", header);
+begin transaction;
+insert or replace into descriptions
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF
+
+
+#
+# (3/6) Highlights data
+#
+echo "\"Symbol\",\"MarketCapitalization\",\"MarketCapitalizationMln\",\"EBITDA\",\"PERatio\",\"PEGRatio\",\"WallStreetTargetPrice\",\"BookValue\",\"DividendShare\",\"DividendYield\",\"EarningsShare\",\"EPSEstimateCurrentYear\",\"EPSEstimateNextYear\",\"EPSEstimateNextQuarter\",\"EPSEstimateCurrentQuarter\",\"MostRecentQuarter\",\"ProfitMargin\",\"OperatingMarginTTM\",\"ReturnOnAssetsTTM\",\"ReturnOnEquityTTM\",\"RevenueTTM\",\"RevenuePerShareTTM\",\"QuarterlyRevenueGrowthYOY\",\"GrossProfitTTM\",\"DilutedEpsTTM\",\"QuarterlyEarningsGrowthYOY\"" > ${EXCHANGEDIR}/US/fundamentals/00highlights.csv
+
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 10 jq -r '[(.General.Code)] +
+	     	      	   [.Highlights 
+                            | (.MarketCapitalization)
+			    ,(.MarketCapitalizationMln)
+			    ,(.EBITDA)
+			    ,(.PERatio)
+			    ,(.PEGRatio) 
+			    ,(.WallStreetTargetPrice)
+			    ,(.BookValue)
+			    ,(.DividendShare)
+			    ,(.DividendYield)
+			    ,(.EarningsShare)
+			    ,(.EPSEstimateCurrentYear)
+			    ,(.EPSEstimateNextYear)
+			    ,(.EPSEstimateNextQuarter)
+			    ,(.EPSEstimateCurrentQuarter)
+			    ,(.MostRecentQuarter)
+			    ,(.ProfitMargin)
+			    ,(.OperatingMarginTTM)
+			    ,(.ReturnOnAssetsTTM)
+			    ,(.ReturnOnEquityTTM)
+			    ,(.RevenueTTM)
+			    ,(.RevenuePerShareTTM)
+			    ,(.QuarterlyRevenueGrowthYOY)
+			    ,(.GrossProfitTTM)
+			    ,(.DilutedEpsTTM)
+			    ,(.QuarterlyEarningsGrowthYOY)]
+			    | @csv' >> ${EXCHANGEDIR}/US/fundamentals/00highlights.csv
+#TODO sql import
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00highlights.csv", header);
+begin transaction;
+insert or replace into highlights
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF
+
+#
+# (4/6) Valuation data
+#
+
+echo "\"Symbol\",\"TrailingPE\",\"ForwardPE\",\"PriceSalesTTM\",\"PriceBookMRQ\",\"EnterpriseValueRevenue\",\"EnterpriseValueEbitda\"" > ${EXCHANGEDIR}/US/fundamentals/00valuations.csv
+
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 10 jq -r '[(.General.Code)] +
+    	     	      	   [.Valuation
+			   | (.TrailingPE)
+			   ,(.ForwardPE)	
+			   ,(.PriceSalesTTM)
+			   ,(.PriceBookMRQ)
+			   ,(.EnterpriseValueRevenue)
+			   ,(.EnterpriseValueEbitda)]
+			   | @csv' >> ${EXCHANGEDIR}/US/fundamentals/00valuations.csv
+#TODO sql import
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00valuations.csv", header);
+begin transaction;
+insert or replace into valuations
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF
+
+#
+# (5/6) Share Stats data
+#
+echo "\"Symbol\",\"SharesOutstanding\",\"SharesFloat\",\"PercentInsiders\",\"PercentInstitutions\",\"SharesShort\",\"SharesShortPriorMonth\",\"ShortRatio\",\"ShortPercentOutstanding\",\"ShortPercentFloat\"" > ${EXCHANGEDIR}/US/fundamentals/00sharesstats.csv
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 10 jq -r '[(.General.Code)] +
+    	     	      	   [.SharesStats
+			   | (.SharesOutstanding)
+			     ,(.SharesFloat)
+			     ,(.PercentInsiders)
+			     ,(.PercentInstitutions)
+			     ,(.SharesShort)
+			     ,(.SharesShortPriorMonth)
+			     ,(.ShortRatio)
+			     ,(.ShortPercentOutstanding)
+			     ,(.ShortPercentFloat)]
+			   | @csv' >> ${EXCHANGEDIR}/US/fundamentals/00sharesstats.csv
+
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00sharesstats.csv", header);
+begin transaction;
+insert or replace into sharesstats
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF
+
+#
+# (6/6) Technicals data
+#
+echo "\"Symbol\",\"Beta\",\"52WeekHigh\",\"52WeekLow\",\"50DayMA\",\"200DayMA\",\"SharesShort\",\"SharesShortPriorMonth\",\"ShortRatio\",\"ShortPercent\"" > ${EXCHANGEDIR}/US/fundamentals/00technicals.csv
+
+printf '%s\n' "${FILES[@]}" |
+    xargs  -P 10  jq -r '[(.General.Code)] +
+    	     	       	    [.Technicals
+			    | (.Beta)
+			     ,(.["52WeekHigh"])
+			     ,(.["52WeekLow"])
+			     ,(.["50DayMA"])
+			     ,(.["200DayMA"])
+			     ,(.SharesShort)
+			     ,(.SharesShortPriorMonth)
+			     ,(.ShortRatio)
+			     ,(.ShortPercent)]
+			     | @csv' >> ${EXCHANGEDIR}/US/fundamentals/00technicals.csv
+
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${EXCHANGEDIR}/US/fundamentals/00technicals.csv", header);
+begin transaction;
+insert or replace into technicals
+select * from temp.t1;
+commit;
+drop table temp.t1;
+EOF

@@ -1,0 +1,45 @@
+#!/bin/bash
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
+# 
+#
+# Description: bootstraps US database, creates
+# fresh from schema, downloads symbols, imports
+# 
+#################################################
+
+set -euo pipefail
+IFS=$'\n\t'
+
+. ../../yeodl.config
+
+DBDIR=${YEODLDIR}/dbs
+DATE=`date +%F`
+
+
+# TODO: insert test and dialogue for "Are you sure?" to remove db
+
+# create db
+sqlite3 ${DBDIR}/US.db < ${DBDIR}/schemas/US.sql
+
+# get symbols and load
+FILE="${YEODLDIR}/exchanges/US/symbols/${DATE}.csv"
+
+#wget -q -O ${FILE} https://eodhistoricaldata.com/api/exchanges/US?api_token=${APIKEY}
+
+echo "Downloaded ${FILE}. Beginning insert."
+
+${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t2 using csv(filename="${FILE}", header);
+begin transaction;
+insert or replace into symbols
+select code as symbol, name, exchange
+            from temp.t2
+            where exchange in ("AMEX", "BATS", "NASDAQ", "NYSE");
+commit;
+drop table temp.t2;
+EOF
+
