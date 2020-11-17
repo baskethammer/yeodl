@@ -26,8 +26,9 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+<!--[![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+-->
 
 
 
@@ -177,14 +178,14 @@ Project Link: [https://github.com/baskethammer/yeodl](https://github.com/basketh
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/baskethammer/repo.svg?style=flat-square
+[contributors-shield]: https://img.shields.io/github/contributors/baskethammer/yeodl.svg?style=flat-square
 [contributors-url]: https://github.com/baskethammer/yeodl/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/baskethammer/repo.svg?style=flat-square
+[forks-shield]: https://img.shields.io/github/forks/baskethammer/yeodl.svg?style=flat-square
 [forks-url]: https://github.com/baskethammer/yeodl/network/members
-[stars-shield]: https://img.shields.io/github/stars/baskethammer/repo.svg?style=flat-square
+[stars-shield]: https://img.shields.io/github/stars/baskethammer/yeodl.svg?style=flat-square
 [stars-url]: https://github.com/baskethammer/yeodl/stargazers
-[issues-shield]: https://img.shields.io/github/issues/baskethammer/repo.svg?style=flat-square
+[issues-shield]: https://img.shields.io/github/issues/baskethammer/yeodl.svg?style=flat-square
 [issues-url]: https://github.com/baskethammer/yeodl/issues
-[license-shield]: https://img.shields.io/github/license/baskethammer/repo.svg?style=flat-square
+[license-shield]: https://img.shields.io/github/license/baskethammer/yeodl.svg?style=flat-square
 [license-url]: https://github.com/baskethammer/yeodl/blob/master/LICENSE.txt
 [product-screenshot]: images/screenshot.png
