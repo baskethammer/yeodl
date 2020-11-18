@@ -5,60 +5,24 @@
 # APIKEY
 # 
 #
-# Description: refresh fundamental data
-# 
+# Description: download daily prices and update
+# TODO: change to use utility file for $DATE
 # 
 #################################################
 
 set -euo pipefail
 IFS=$'\n\t'
 
-. ../yeodl.config
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
 
-#
-# (1/1) Price updates
-#
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
-EXCHANGEDIR="${YEODLDIR}/exchanges"
-DB="${YEODLDIR}/dbs/US.db"
+UTILITIES="${YEODLDIR}/bin/utilities"
 DATE=`date +%F`
-FILES=(
-       "${EXCHANGEDIR}/US/prices/${DATE}.AMEX.csv" 
-       "${EXCHANGEDIR}/US/prices/${DATE}.BATS.csv"
-       "${EXCHANGEDIR}/US/prices/${DATE}.NYSE.csv"
-       "${EXCHANGEDIR}/US/prices/${DATE}.NASDAQ.csv"
-      )
 
-EXCHANGES=("AMEX" "BATS" "NYSE" "NASDAQ")
+${UTILITIES}/symbols US
+${UTILITIES}/US-prices ${date}
 
-for (( i=0; i<${#EXCHANGES[*]}; ++i))
-do
-    URLFILES+=( "${FILES[$i]}" "http://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGES[$i]}?api_token=${APIKEY}&date=${DATE}&filter=extended&fmt=csv")
-done
-
-
-printf '%s\n' "${URLFILES[@]}" |
-    xargs -t -n 2 -P 4 wget -q  -O 
-
-echo "Downloaded.  Beginning insert."
-
-for CSV in ${FILES[@]}
-do
-${YEODLDIR}/bin/sqlite3 $DB <<EOF
-.load ${YEODLDIR}/lib/csv
-create virtual table temp.t1 using csv(filename="${CSV}", header);
-begin transaction;
-insert or ignore into prices
-select code as symbol, "date" as fdate, open, high, low, close, adjusted_close, volume
-               ,ema_50, ema_200, avgvol_14d, avgvol_50d, avgvol_200d, high_250, low_250
-               ,marketcapitalization
-            from temp.t1
-            where "date" is not null;
-commit;
-drop table temp.t1;
-EOF
-done
-
-#
-#  Todo: add daily split/dividends files, symbol files (symbols could be weekly though, as long as runs before fundamentals)
-#
+# TODO splits and dividends

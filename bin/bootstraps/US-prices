@@ -14,7 +14,11 @@
 #because otherwise this never will work
 IFS=$'\n\t'
 
-. ../../yeodl.config
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
 DBDIR=${YEODLDIR}/dbs
 EXCHANGEDIR=${YEODLDIR}/exchanges

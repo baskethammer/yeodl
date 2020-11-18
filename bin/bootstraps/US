@@ -13,11 +13,15 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-. ../../yeodl.config
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+
 
 DBDIR=${YEODLDIR}/dbs
 DATE=`date +%F`
-
 
 # TODO: insert test and dialogue for "Are you sure?" to remove db
 
@@ -27,7 +31,7 @@ sqlite3 ${DBDIR}/US.db < ${DBDIR}/schemas/US.sql
 # get symbols and load
 FILE="${YEODLDIR}/exchanges/US/symbols/${DATE}.csv"
 
-#wget -q -O ${FILE} https://eodhistoricaldata.com/api/exchanges/US?api_token=${APIKEY}
+wget -q -O ${FILE} https://eodhistoricaldata.com/api/exchanges/US?api_token=${APIKEY}
 
 echo "Downloaded ${FILE}. Beginning insert."
 
