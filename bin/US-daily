@@ -5,8 +5,8 @@
 # APIKEY
 # 
 #
-# Description: download daily prices and update
-# TODO: change to use utility file for $DATE
+# Description: download symbols, prices and update
+# 
 # 
 #################################################
 
@@ -23,6 +23,6 @@ UTILITIES="${YEODLDIR}/bin/utilities"
 DATE=`date +%F`
 
 ${UTILITIES}/symbols US
-${UTILITIES}/US-prices ${date}
+${UTILITIES}/US-prices ${DATE}
 
 # TODO splits and dividends
