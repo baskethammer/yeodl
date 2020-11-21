@@ -13,16 +13,25 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+echo "US-daily: setting vars."
+
 if [ -z "${XDG_CONFIG_HOME:-}" ]; then
     XDG_CONFIG_HOME=$HOME/.config
 fi
 
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
+echo "US-daily: parsed yeodl.config"
+
 UTILITIES="${YEODLDIR}/bin/utilities"
 DATE=`date +%F`
 
-${UTILITIES}/symbols US
-${UTILITIES}/US-prices ${DATE}
+echo "US-daily: ${DATE}, running symbols next"
+
+${UTILITIES}/symbols "US"
+
+echo "US-daily: symbols run, US-prices next"
+
+${UTILITIES}/US-prices "${DATE}"
 
 # TODO splits and dividends

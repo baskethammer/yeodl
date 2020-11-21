@@ -19,6 +19,7 @@ fi
 
 DBDIR=${YEODLDIR}/dbs
 EXCHANGE=$1
+DATE=`date +%F`
 
 # get symbols and load
 FILE="${YEODLDIR}/exchanges/${EXCHANGE}/symbols/${DATE}.csv"
