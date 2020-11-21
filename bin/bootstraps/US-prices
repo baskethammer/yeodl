@@ -40,8 +40,8 @@ do
 done
 
 
-# printf '%s\n' "${URLFILES[@]}" |
-#     xargs  -n 2 -P 8 wget -q  -O 
+ printf '%s\n' "${URLFILES[@]}" |
+     xargs  -n 2 -P 6 wget -q  -O 
 
 echo "Downloaded, beginning insert"
 
