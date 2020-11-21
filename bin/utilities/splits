@@ -3,12 +3,12 @@
 # depends on yeodl.config for globals
 # YEODLDIR, APIKEY
 #
-# Arguments: Exchange (eg: US)
+# Arguments: Exchange (eg: US), DATE
 # Description: downloads symbols for exchange and
 # loads into DB
 ##################################################
 set -euo pipefail
-IFS=$'\n\t'
+#IFS=$'\n\t'
 
 if [ -z "${XDG_CONFIG_HOME:-}" ]; then
     XDG_CONFIG_HOME=$HOME/.config
@@ -19,12 +19,11 @@ fi
 
 DBDIR=${YEODLDIR}/dbs
 EXCHANGE=$1
-DATE=`date +%F`
+DATE=$2
 
-# get symbols and load
-FILE="${YEODLDIR}/exchanges/${EXCHANGE}/symbols/${DATE}.csv"
-
-wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/exchange-symbol-list/${EXCHANGE}?api_token=${APIKEY}"
+# get splits and load
+FILE="${YEODLDIR}/exchanges/${EXCHANGE}/splits/${DATE}.csv"
+wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGE}?api_token=${APIKEY}&type=splits&date=${DATE}"
 
 echo "symbols: Downloaded ${FILE}. Beginning insert."
 
@@ -32,10 +31,10 @@ ${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
 .load ${YEODLDIR}/lib/csv
 create virtual table temp.t2 using csv(filename="${FILE}", header);
 begin transaction;
-insert or replace into symbols
-select code as symbol, name, exchange
+insert or replace into splits
+select code as symbol, "date" as sdate, split
             from temp.t2
-            where exchange in ("AMEX", "BATS", "NASDAQ", "NYSE");
+	    where ex is not null;
 commit;
 drop table temp.t2;
 EOF

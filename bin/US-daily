@@ -34,4 +34,13 @@ echo "US-daily: symbols run, US-prices next"
 
 ${UTILITIES}/US-prices "${DATE}"
 
-# TODO splits and dividends
+echo "US-daily: US-prices run, dividends next"
+${UTILITIES}/dividends "US" "${DATE}"
+
+echo "US-daily: dividends run, splits next"
+${UTILITIES}/splits "US" "${DATE}"
+
+echo "US-daily: splits run."
+# TODO update adjusteds on split or div
+# may need a new log of last date
+
