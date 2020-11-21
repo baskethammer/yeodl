@@ -1,7 +1,7 @@
 # any emacs save file
 *~
 *#
-
+.#*
 # any database
 *.db
 

@@ -7,7 +7,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-. ./yeodl.config
+#: ${XDG_CONFIG_HOME}:=$HOME/.config
+
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+mkdir -p ${XDG_CONFIG_HOME}/yeodl
+cp ./yeodl.config ${XDG_CONFIG_HOME}/yeodl
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
 mkdir -p ${YEODLDIR}/{bin,dbs,exchanges,lib,src}
 mkdir -p ${YEODLDIR}/exchanges/{US,INDX,COMM}/{prices,symbols}

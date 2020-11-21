@@ -5,13 +5,15 @@
 # APIKEY
 # START_YEAR
 #
+# Arguments: exchange, start_date
+#
 # Description: bootstraps US database, creates
 # fresh from schema, downloads symbols, imports
 # 
 #################################################
 
-#set -euo pipefail
-#because otherwise this never will work
+set -euo pipefail
+
 IFS=$'\n\t'
 
 if [ -z "${XDG_CONFIG_HOME:-}" ]; then
@@ -20,16 +22,37 @@ fi
 
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
+EXCHANGE=$1
+DATE=$2
+
+EXCHANGEDIR=${YEODLDIR}/exchanges/${EXCHANGE}
 DBDIR=${YEODLDIR}/dbs
-EXCHANGEDIR=${YEODLDIR}/exchanges
-DATE=`date +%F`
 
 
-STOCKS=`${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<"EOF" "select symbol from symbols order by symbol;" 
+read -d '' SQL <<EOF || true
+with splits_and_divs (sdsym) 
+as
+(	select symbol
+	  from splits
+	  where splits.sdate >= '${DATE}'
+  UNION
+	select symbol
+	  from  dividends
+	  where dividends.ddate >= '${DATE}'
+)
+select s.symbol from symbols s, splits_and_divs sd
+where s.symbol = sd.sdsym;
+EOF
+
+
+STOCKS=`${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<"EOF" "${SQL}"
 EOF`
+
+
+
 for i in ${STOCKS}
 do
-    FILES+=( "${EXCHANGEDIR}/US/prices/byticker/${i}.csv")
+    FILES+=( "${EXCHANGEDIR}/prices/byticker/${i}.csv")
     STOCKS2+=( "${i}")
 done
 
@@ -40,15 +63,15 @@ do
 done
 
 
- printf '%s\n' "${URLFILES[@]}" |
-     xargs  -n 2 -P 6 wget -q  -O 
+  printf '%s\n' "${URLFILES[@]}" |
+      xargs  -n 2 -P 6 wget -q  -O 
 
 echo "Downloaded, beginning insert"
 
 for (( j=0; j<${#FILES[*]}; ++j))
 do
 #echo "${FILES[$j]}"    
-${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<EOF
+${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
 .load ${YEODLDIR}/lib/csv
 create virtual table temp.t1 using csv(filename="${FILES[$j]}", header);
 begin transaction;

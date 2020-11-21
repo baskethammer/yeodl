@@ -95,3 +95,13 @@ CREATE TABLE descriptions(
      , Industry text
      , WebURL text);
 CREATE UNIQUE INDEX symbol_descriptions on descriptions(symbol);
+CREATE TABLE dividends(
+               symbol text
+     , ddate date
+     , dividend real);
+CREATE UNIQUE INDEX symbolddate_dividends on dividends(symbol, ddate);
+CREATE TABLE splits(
+               symbol text
+     , sdate date
+     , split text);
+CREATE UNIQUE INDEX symbolddate_splits on splits(symbol, sdate);

@@ -5,7 +5,10 @@
 # APIKEY
 # 
 #
-# Description: refresh fundamental data
+# Description: download symbols, prices and insert
+#              download dividends and splits
+#              re-download history for any div/split
+#              to have adjusted close corrected
 # 
 # 
 #################################################
@@ -13,52 +16,37 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-. ../yeodl.config
+echo "US-daily: setting vars."
 
-#
-# (1/1) Price updates
-#
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
 
-EXCHANGEDIR="${YEODLDIR}/exchanges"
-DB="${YEODLDIR}/dbs/US.db"
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+
+echo "US-daily: parsed yeodl.config"
+
+UTILITIES="${YEODLDIR}/bin/utilities"
 DATE=`date +%F`
-FILES=(
-       "${EXCHANGEDIR}/US/prices/${DATE}.AMEX.csv" 
-       "${EXCHANGEDIR}/US/prices/${DATE}.BATS.csv"
-       "${EXCHANGEDIR}/US/prices/${DATE}.NYSE.csv"
-       "${EXCHANGEDIR}/US/prices/${DATE}.NASDAQ.csv"
-      )
 
-EXCHANGES=("AMEX" "BATS" "NYSE" "NASDAQ")
+echo "US-daily: ${DATE}, running symbols next"
 
-for (( i=0; i<${#EXCHANGES[*]}; ++i))
-do
-    URLFILES+=( "${FILES[$i]}" "http://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGES[$i]}?api_token=${APIKEY}&date=${DATE}&filter=extended&fmt=csv")
-done
+${UTILITIES}/symbols "US"
 
+echo "US-daily: symbols run, US-prices next"
 
-printf '%s\n' "${URLFILES[@]}" |
-    xargs -t -n 2 -P 4 wget -q  -O 
+${UTILITIES}/US-prices "${DATE}"
 
-echo "Downloaded.  Beginning insert."
+echo "US-daily: US-prices run, dividends next"
+${UTILITIES}/dividends "US" "${DATE}"
 
-for CSV in ${FILES[@]}
-do
-${YEODLDIR}/bin/sqlite3 $DB <<EOF
-.load ${YEODLDIR}/lib/csv
-create virtual table temp.t1 using csv(filename="${CSV}", header);
-begin transaction;
-insert or ignore into prices
-select code as symbol, "date" as fdate, open, high, low, close, adjusted_close, volume
-               ,ema_50, ema_200, avgvol_14d, avgvol_50d, avgvol_200d, high_250, low_250
-               ,marketcapitalization
-            from temp.t1
-            where "date" is not null;
-commit;
-drop table temp.t1;
-EOF
-done
+echo "US-daily: dividends run, splits next"
+${UTILITIES}/splits "US" "${DATE}"
 
-#
-#  Todo: add daily split/dividends files, symbol files (symbols could be weekly though, as long as runs before fundamentals)
-#
+echo "US-daily: splits run, adjusted-prices next."
+${UTILITIES}/adjusted-prices "US" "${DATE}"
+
+echo "US-daily: adjusted-prices done."
+# TODO update adjusteds on split or div
+# may need a new log of last date
+

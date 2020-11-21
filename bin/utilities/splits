@@ -1,0 +1,41 @@
+#!/bin/bash
+##################################################
+# depends on yeodl.config for globals
+# YEODLDIR, APIKEY
+#
+# Arguments: Exchange (eg: US), DATE
+# Description: downloads symbols for exchange and
+# loads into DB
+##################################################
+set -euo pipefail
+#IFS=$'\n\t'
+
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+
+
+DBDIR=${YEODLDIR}/dbs
+EXCHANGE=$1
+DATE=$2
+
+# get splits and load
+FILE="${YEODLDIR}/exchanges/${EXCHANGE}/splits/${DATE}.csv"
+wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGE}?api_token=${APIKEY}&type=splits&date=${DATE}"
+
+echo "symbols: Downloaded ${FILE}. Beginning insert."
+
+${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t2 using csv(filename="${FILE}", header);
+begin transaction;
+insert or replace into splits
+select code as symbol, "date" as sdate, split
+            from temp.t2
+	    where ex is not null;
+commit;
+drop table temp.t2;
+EOF
+
