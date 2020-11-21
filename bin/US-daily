@@ -5,7 +5,10 @@
 # APIKEY
 # 
 #
-# Description: download symbols, prices and update
+# Description: download symbols, prices and insert
+#              download dividends and splits
+#              re-download history for any div/split
+#              to have adjusted close corrected
 # 
 # 
 #################################################
@@ -40,7 +43,10 @@ ${UTILITIES}/dividends "US" "${DATE}"
 echo "US-daily: dividends run, splits next"
 ${UTILITIES}/splits "US" "${DATE}"
 
-echo "US-daily: splits run."
+echo "US-daily: splits run, adjusted-prices next."
+${UTILITIES}/adjusted-prices "US" "${DATE}"
+
+echo "US-daily: adjusted-prices done."
 # TODO update adjusteds on split or div
 # may need a new log of last date
 
