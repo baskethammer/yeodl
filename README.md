@@ -179,6 +179,13 @@ On some platforms, you will need to compile sqlite3:
 ~/yeodl$ ./bin/bootstraps/US  #[this creates the DB, downloads symbols for AMEX, BATS, NASDAQ, NYSE]
 ~/yeodl$ ./bin/bootstraps/US-prices  #[this downloads all history back to start_year for each symbol, loads into db]
 ```
+If there is an exchange for which you are sure you do not need
+adjusted prices or fundamental data (e.g. INDX), you can use the
+generic bootstraps provided:
+```sh
+~/yeodl$ ./bin/bootstraps/generic INDX
+~/yeodl$ ./bin/bootstraps/generic-prices INDX
+
 5. Create systemd timer and service for daily updates.
 ```sh
 # Example contents of ~/.config/systemd/user/yeodl-us-daily.service

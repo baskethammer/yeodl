@@ -3,8 +3,8 @@
 # depends on yeodl.config for globals
 # YEODLDIR, APIKEY
 #
-# Arguments: Exchange (eg: US)
-# Description: downloads symbols for exchange and
+# Arguments: None 
+# Description: downloads symbols for US exchange and
 # loads into DB
 ##################################################
 set -euo pipefail
@@ -18,11 +18,11 @@ fi
 
 
 DBDIR=${YEODLDIR}/dbs
-EXCHANGE=$1
+#EXCHANGE=$1
 DATE=`date +%F`
 
 # get symbols and load
-FILE="${YEODLDIR}/exchanges/${EXCHANGE}/symbols/${DATE}.csv"
+FILE="${YEODLDIR}/exchanges/US/symbols/${DATE}.csv"
 
 wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/exchange-symbol-list/${EXCHANGE}?api_token=${APIKEY}"
 
@@ -34,7 +34,8 @@ create virtual table temp.t2 using csv(filename="${FILE}", header);
 begin transaction;
 insert or replace into symbols
 select code as symbol, name, exchange
-            from temp.t2;
+            from temp.t2
+            where exchange in ("AMEX", "BATS", "NASDAQ", "NYSE");
 commit;
 drop table temp.t2;
 EOF

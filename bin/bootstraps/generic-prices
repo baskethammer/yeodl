@@ -5,9 +5,11 @@
 # APIKEY
 # START_YEAR
 #
+# Arguments: Exchange
 #
 # Description: downloads all price history back
-# to START_YEAR for each symbol in US.db.
+# to START_YEAR for each symbol in DB. Assumes
+# symbols table has been populated.
 # 
 #################################################
 
@@ -21,22 +23,24 @@ fi
 
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
+EXCHANGE=$1
+
 DBDIR=${YEODLDIR}/dbs
-EXCHANGEDIR=${YEODLDIR}/exchanges
+EXCHANGEDIR=${YEODLDIR}/exchanges/${EXCHANGE}
 
 
-STOCKS=`${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<"EOF" "select symbol from symbols order by symbol;" 
+STOCKS=`${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<"EOF" "select symbol from symbols order by symbol;" 
 EOF`
 for i in ${STOCKS}
 do
-    FILES+=( "${EXCHANGEDIR}/US/prices/byticker/${i}.csv")
+    FILES+=( "${EXCHANGEDIR}/prices/byticker/${i}.csv")
     STOCKS2+=( "${i}")
 done
 
 
 for (( j=0; j<${#FILES[*]}; ++j))
 do
-    URLFILES+=( "${FILES[$j]}" "http://eodhistoricaldata.com/api/eod/${STOCKS2[$j]}.US?api_token=${APIKEY}&from=${START_YEAR}-01-01")
+    URLFILES+=( "${FILES[$j]}" "http://eodhistoricaldata.com/api/eod/${STOCKS2[$j]}.${EXCHANGE}?api_token=${APIKEY}&from=${START_YEAR}-01-01")
 done
 
 
@@ -48,7 +52,7 @@ echo "Downloaded, beginning insert"
 for (( j=0; j<${#FILES[*]}; ++j))
 do
 #echo "${FILES[$j]}"    
-${YEODLDIR}/bin/sqlite3 ${DBDIR}/US.db <<EOF
+${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
 .load ${YEODLDIR}/lib/csv
 create virtual table temp.t1 using csv(filename="${FILES[$j]}", header);
 begin transaction;
@@ -61,4 +65,3 @@ commit;
 drop table temp.t1;
 EOF
 done
-
