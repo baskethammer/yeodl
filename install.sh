@@ -14,7 +14,11 @@ if [ -z "${XDG_CONFIG_HOME:-}" ]; then
 fi
 
 mkdir -p ${XDG_CONFIG_HOME}/yeodl
-cp ./yeodl.config ${XDG_CONFIG_HOME}/yeodl
+cat <<EOF > ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+APIKEY=[Enter your API key from EOD here]
+YEODLDIR=$(pwd)
+START_YEAR=1995
+EOF
 
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 

@@ -77,24 +77,45 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This is a collection of shell scripts intended to build an historical database of stock prices and fundamental data
-from eodhistoricaldata.com, and update daily.
+This is a collection of shell scripts to build an historical
+database of stock prices and fundamental data from
+[EODhistoricaldata](https://www.eodhistoricaldata.com), and update
+daily. Current capabilities include:
+
+* Initial bulk download of major US exchanges (AMEX, BATS, NASDAQ, NYSE)
+* Daily updates:
+  * Open High Low Close (OHLC), Volume, adjusted price
+  * Dividends and Splits
+	* New entries trigger re-download of historical adjusted_closes
+* As-necessary data from EODhistoricaldata's fundamentals API:
+  * Descriptive info (sector, industry, industry, etc.)
+  * Highlights (typical screen values)
+  * Valuation info (PEs, EV, P/S, P/B, EV, EV/EBITDA)
+  * Technicals (52w H/L, moving averages, short ratio)
+  * Share stats (# outstanding, insiders %, etc.)
+  * EPS for the previous 20 quarters (5 years)
+
 
 Most APIs make it easy to screen stocks, or easy to analyze a handful of equities over long periods of time. Hopefully
-YEODL helps interested analysts do both with a minimum of data munging required.
+YEODL helps interested analysts do both with a minimum of data munging
+required. YEODL's simplicity is intended to encourage the development
+of APIs in several languages.
 
-In its current state, this should work quite well on Ubuntu and other 64-bit systemd-driven linuxes (and maybe WSL too).
 
 ### Built With
 
-This project has had many false starts. At the end of the day, it was constructed with the simplest things that could 
+YEODL was constructed with the simplest things that could 
 possibly work, namely:
 
-* [BASH](https://www.gnu.org/software/bash/)
+* [bash](https://www.gnu.org/software/bash/)
 * [Sqlite3](https://www.sqlite.org/index.html)
-* [JQ](https://stedolan.github.io/jq/)
+* [jq](https://stedolan.github.io/jq/)
 
-
+You can get surprisingly far with shell scripts and a few
+well-selected utilities.  In an era when the instructions for many new
+projects assume the use of cloud services, docker, and a bunch of
+other frameworks, it can be refreshing to use simpler tools that are
+as fast (or faster).
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -103,7 +124,26 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
+YEODL was developed on Ubuntu 18.04, but should be compatible with any
+sane unix-alike environment.
+
+You will need an account for access to financial data. It is not free.
+
+* [EODHistoricaldata.com](https://www.eodhistoricaldata.com) Current
+  prices range from USD $20/mo for end-of-day data from 60+
+  exchanges (and indices, forex pairs) to $50/mo for everything.
+```sh
+$ vi ~/.config/yeodl/yeodl.config
+[ edit APIKEY with your key]
+# file could be elsewhere if your $XDG_CONFIG_HOME is set
+```
+
+* jq
+```sh
+$ sudo apt-get install jq
+```
+On some platforms, you will need to compile sqlite3:
+
 * sqlite3 (from source, linux-64 binaries included in this archive for convenience)
 ```sh
 wget -q https://www.sqlite.org/2020/sqlite-autoconf-3330000.tar.gz
@@ -111,11 +151,7 @@ tar xfvz sqlite-auto-conf-3330000.tar.gz
 cd sqlite-auto-conf-3330000
 [follow directions in folder]
 wget https://www.sqlite.org/src/finfo?name=ext/misc/csv.c&ci=54b54f02c66c5aea&m=53b3338d4fa812ed
-[compile csv.c, drop into yeodl's lib directory]
-```
-* jq
-```sh
-apt-get install jq
+[compile csv.c, drop the resulting lib into yeodl's lib directory]
 ```
 
 
@@ -123,12 +159,12 @@ apt-get install jq
 
 1. Clone the repo
 ```sh
-git clone https://github.com/baskethammer/yeodl.git
+~/$ git clone https://github.com/baskethammer/yeodl.git
 ```
 2. Build directory tree
 ```sh
-cd yeodl
-./install.sh
+~/$ cd yeodl
+~/yeodl$ ./install.sh
 ```
 3. Create yeodl.conf w/ 
 * YEODLDIR="/path/to/yeodl"
@@ -137,8 +173,8 @@ cd yeodl
 
 4. Bootstrap history
 ```sh
-	./bin/bootstraps/US  #[this creates the DB, downloads symbols for AMEX, BATS, NASDAQ, NYSE]
-	./bin/bootstraps/US-prices  #[this downloads all history back to start_year for each symbol, loads into db]
+~/yeodl$ ./bin/bootstraps/US  #[this creates the DB, downloads symbols for AMEX, BATS, NASDAQ, NYSE]
+~/yeodl$ ./bin/bootstraps/US-prices  #[this downloads all history back to start_year for each symbol, loads into db]
 ```
 5. Create systemd timer and service (examples to come) for daily updates.
 
@@ -165,10 +201,14 @@ Contributions are what make the open source community such an amazing place to b
 
 <!-- LICENSE -->
 
+YEODL is licensed for use under
+[GPLv3](https://github.com/nevir/readable-licenses/blob/master/markdown/GPLv3-LICENSE.md). Please
+contact bh@baskethammer.com for a commercial license in the unlikely
+event it is necessary to you.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@baskethammer](https://twitter.com/baskethammer) - bh@baskethammer.com
+BasketHammer - [@baskethammer](https://twitter.com/baskethammer) - bh@baskethammer.com
 
 Project Link: [https://github.com/baskethammer/yeodl](https://github.com/baskethammer/yeodl)
 
@@ -189,3 +229,4 @@ Project Link: [https://github.com/baskethammer/yeodl](https://github.com/basketh
 [license-shield]: https://img.shields.io/github/license/baskethammer/yeodl.svg?style=flat-square
 [license-url]: https://github.com/baskethammer/yeodl/blob/master/LICENSE.txt
 [product-screenshot]: images/screenshot.png
+	
