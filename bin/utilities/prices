@@ -1,0 +1,50 @@
+#!/bin/bash
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
+# 
+# Arguments: exchange, date ('YYYY-MM-DD')
+#
+# Description: refresh price data for
+# a specific day provided as the first argument
+# eg.  .
+# 
+#################################################
+
+set -euo pipefail
+IFS=$'\n\t'
+
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+
+EXCHANGE=$1
+DATE=$2
+
+EXCHANGEDIR="${YEODLDIR}/exchanges/${EXCHANGE}"
+DB="${YEODLDIR}/dbs/${EXCHANGE}.db"
+FILE="${EXCHANGEDIR}/prices/${DATE}.csv" 
+
+wget -q -O ${FILE} "http://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGE}?api_token=${APIKEY}&date=${DATE}&filter=extended&fmt=csv"
+
+echo "prices: ${EXCHANGE} for ${DATE} Downloaded.  Beginning insert."
+
+${YEODLDIR}/bin/sqlite3 $DB <<EOF
+.load ${YEODLDIR}/lib/csv
+create virtual table temp.t1 using csv(filename="${FILE}", header);
+begin transaction;
+insert or ignore into prices 
+select code as symbol, "date" as fdate, open, high, low, close, adjusted_close, volume
+               ,ema_50, ema_200, avgvol_14d, avgvol_50d, avgvol_200d, high_250, low_250
+	       ,marketcapitalization      
+            from temp.t1
+            where "date" is not null;
+commit;
+drop table temp.t1;
+EOF
+
+
+
