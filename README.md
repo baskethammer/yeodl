@@ -134,7 +134,7 @@ You will need an account for access to financial data. It is not free.
   exchanges (and indices, forex pairs) to $50/mo for everything.
 ```sh
 $ vi ~/.config/yeodl/yeodl.config
-[ edit APIKEY with your key]
+# [ edit to set APIKEY with your key]
 # file could be elsewhere if your $XDG_CONFIG_HOME is set
 ```
 
@@ -146,12 +146,15 @@ On some platforms, you will need to compile sqlite3:
 
 * sqlite3 (from source, linux-64 binaries included in this archive for convenience)
 ```sh
-wget -q https://www.sqlite.org/2020/sqlite-autoconf-3330000.tar.gz
-tar xfvz sqlite-auto-conf-3330000.tar.gz
-cd sqlite-auto-conf-3330000
-[follow directions in folder]
-wget https://www.sqlite.org/src/finfo?name=ext/misc/csv.c&ci=54b54f02c66c5aea&m=53b3338d4fa812ed
-[compile csv.c, drop the resulting lib into yeodl's lib directory]
+~/yeodl$ wget -q https://www.sqlite.org/2020/sqlite-autoconf-3330000.tar.gz
+~/yeodl$ tar xfvz sqlite-auto-conf-3330000.tar.gz
+~/yeodl$ cd sqlite-auto-conf-3330000
+
+# [follow directions in folder]
+
+~/yeodl$ wget https://www.sqlite.org/src/finfo?name=ext/misc/csv.c&ci=54b54f02c66c5aea&m=53b3338d4fa812ed
+
+#[compile csv.c, drop the resulting lib into yeodl's lib directory]
 ```
 
 
@@ -176,7 +179,35 @@ wget https://www.sqlite.org/src/finfo?name=ext/misc/csv.c&ci=54b54f02c66c5aea&m=
 ~/yeodl$ ./bin/bootstraps/US  #[this creates the DB, downloads symbols for AMEX, BATS, NASDAQ, NYSE]
 ~/yeodl$ ./bin/bootstraps/US-prices  #[this downloads all history back to start_year for each symbol, loads into db]
 ```
-5. Create systemd timer and service (examples to come) for daily updates.
+5. Create systemd timer and service for daily updates.
+```sh
+# Example contents of ~/.config/systemd/user/yeodl-us-daily.service
+[Unit]
+Description= (Y2) YEODL Daily US downloader
+
+[Service]
+WorkingDirectory=/home/<your username>/yeodl/bin
+ExecStart=/home/<your username>/yeodl/bin/US-daily
+
+
+# Example contents of ~/.config/systemd/user/yeodl-us-daily.timer
+[Unit]
+Description=Run YEODL's daily US price downloader
+Requires=yeodl-us-daily.service
+
+[Timer]
+OnCalendar=Mon..Fri 19:45
+
+[Install]
+WantedBy=multi-user.target
+
+```
+6. Enable systemd timer
+```sh
+~/$ systemctl --user daemon-reload
+~/$ systemctl enable yeodl-us-daily.timer
+~/$ systemctl start yeodl-us-daily.timer
+```
 
 
 <!-- ROADMAP -->
