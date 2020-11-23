@@ -185,7 +185,7 @@ generic bootstraps provided:
 ```sh
 ~/yeodl$ ./bin/bootstraps/generic INDX
 ~/yeodl$ ./bin/bootstraps/generic-prices INDX
-
+```
 5. Create systemd timer and service for daily updates.
 ```sh
 # Example contents of ~/.config/systemd/user/yeodl-us-daily.service
