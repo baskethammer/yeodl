@@ -6,7 +6,7 @@
 # 
 # Arguments: date ('YYYY-MM-DD')
 #
-# Description: refresh fundamental data for
+# Description: refresh price data for
 # a specific day provided as the first argument
 # eg.  .
 # 

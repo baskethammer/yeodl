@@ -1,12 +1,16 @@
 #!/bin/bash
-##################################################
-# depends on yeodl.config for globals
-# YEODLDIR, APIKEY
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
 #
-# Arguments: Exchange (eg: US)
-# Description: downloads symbols for exchange and
-# loads into DB
-##################################################
+# Arguments: Exchange
+#
+# Description: bootstraps generic database, creates
+# fresh from schema, downloads symbols, imports
+# 
+#################################################
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -16,17 +20,21 @@ fi
 
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
-
-DBDIR=${YEODLDIR}/dbs
 EXCHANGE=$1
+DBDIR=${YEODLDIR}/dbs
 DATE=`date +%F`
+
+# TODO: insert test and dialogue for "Are you sure?" to remove db
+
+# create db
+sqlite3 ${DBDIR}/${EXCHANGE}.db < ${DBDIR}/schemas/generic.sql
 
 # get symbols and load
 FILE="${YEODLDIR}/exchanges/${EXCHANGE}/symbols/${DATE}.csv"
 
 wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/exchange-symbol-list/${EXCHANGE}?api_token=${APIKEY}"
 
-echo "symbols: Downloaded ${FILE}. Beginning insert."
+echo "Downloaded ${FILE}. Beginning insert."
 
 ${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
 .load ${YEODLDIR}/lib/csv
@@ -34,8 +42,8 @@ create virtual table temp.t2 using csv(filename="${FILE}", header);
 begin transaction;
 insert or replace into symbols
 select code as symbol, name, exchange
-            from temp.t2;
+            from temp.t2
+	    where name is not null;
 commit;
 drop table temp.t2;
 EOF
-

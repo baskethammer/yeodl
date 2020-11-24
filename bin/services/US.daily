@@ -31,7 +31,7 @@ DATE=`date +%F`
 
 echo "US-daily: ${DATE}, running symbols next"
 
-${UTILITIES}/symbols "US"
+${UTILITIES}/US-symbols 
 
 echo "US-daily: symbols run, US-prices next"
 

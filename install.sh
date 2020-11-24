@@ -23,7 +23,8 @@ EOF
 . ${XDG_CONFIG_HOME}/yeodl/yeodl.config
 
 mkdir -p ${YEODLDIR}/{bin,dbs,exchanges,lib,src}
-mkdir -p ${YEODLDIR}/exchanges/{US,INDX,COMM}/{prices,symbols}
+mkdir -p ${YEODLDIR}/exchanges/{US,INDX,COMM}/prices/byticker
+mkdir -p ${YEODLDIR}/exchanges/{US,INDX,COMM}/symbols
 mkdir -p ${YEODLDIR}/exchanges/US/{dividends,earnings,fundamentals,options,splits}
 mkdir -p ${YEODLDIR}/exchanges/US/prices/byticker
 mkdir -p ${YEODLDIR}/dbs/schemas

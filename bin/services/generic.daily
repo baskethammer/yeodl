@@ -1,0 +1,39 @@
+#!/bin/bash
+#################################################
+# depends on yeodl.config for globals:
+# YEODLDIR
+# APIKEY
+#
+# Argument: EXCHANGE
+#
+# Description: download symbols, prices and insert
+#              
+# 
+# 
+#################################################
+
+set -euo pipefail
+IFS=$'\n\t'
+
+if [ -z "${XDG_CONFIG_HOME:-}" ]; then
+    XDG_CONFIG_HOME=$HOME/.config
+fi
+
+. ${XDG_CONFIG_HOME}/yeodl/yeodl.config
+
+
+UTILITIES="${YEODLDIR}/bin/utilities"
+DATE=`date +%F`
+EXCHANGE=$1
+
+
+
+${UTILITIES}/symbols "${EXCHANGE}"
+
+echo "${EXCHANGE}-daily: symbols run."
+
+${UTILITIES}/prices "${EXCHANGE}" "${DATE}"
+
+echo "${EXCHANGE}-daily: prices run, done."
+
+
