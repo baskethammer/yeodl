@@ -4,7 +4,7 @@
 # YEODLDIR, APIKEY
 #
 # Arguments: Exchange (eg: US), DATE
-# Description: downloads splits for exchange and
+# Description: downloads earnings for next 7 days
 # loads into DB
 ##################################################
 set -euo pipefail
@@ -22,19 +22,24 @@ EXCHANGE=$1
 DATE=$2
 
 # get splits and load
-FILE="${YEODLDIR}/exchanges/${EXCHANGE}/splits/${DATE}.csv"
-wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/eod-bulk-last-day/${EXCHANGE}?api_token=${APIKEY}&type=splits&date=${DATE}"
+FILE="${YEODLDIR}/exchanges/${EXCHANGE}/earnings/${DATE}.csv"
+wget -q -O "${FILE}" "https://eodhistoricaldata.com/api/calendar/earnings?api_token=${APIKEY}&from=${DATE}&fmt=csv"
 
-echo "splits: Downloaded ${FILE}. Beginning insert."
+CSV_HEADER="symbol,exchange,report_date,date,actual,estimate,difference,percent"
+sed -i "1s/.*/${CSV_HEADER}/" ${FILE}
+sed -i 's/\./,/' ${FILE}
+
+
+echo "earnings: Downloaded ${FILE}. Beginning insert."
 
 ${YEODLDIR}/bin/sqlite3 ${DBDIR}/${EXCHANGE}.db <<EOF
 .load ${YEODLDIR}/lib/csv
 create virtual table temp.t2 using csv(filename="${FILE}", header);
 begin transaction;
-insert or replace into splits
-select code as symbol, "date" as sdate, split
+insert or replace into earnings_calendar
+select symbol, report_date as edate
             from temp.t2
-	    where ex is not null;
+	    where exchange = 'US';
 commit;
 drop table temp.t2;
 EOF

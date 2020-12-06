@@ -45,8 +45,10 @@ ${UTILITIES}/splits "US" "${DATE}"
 
 echo "US-daily: splits run, adjusted-prices next."
 ${UTILITIES}/adjusted-prices "US" "${DATE}"
+echo "US-daily: adjusted-prices done, earnings calendar next"
+${UTILITIES}/earnings-calendar "US" "${DATE}"
 
-echo "US-daily: adjusted-prices done."
+
 # TODO update adjusteds on split or div
 # may need a new log of last date
 
