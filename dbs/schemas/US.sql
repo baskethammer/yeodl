@@ -105,3 +105,9 @@ CREATE TABLE splits(
      , sdate date
      , split text);
 CREATE UNIQUE INDEX symbolddate_splits on splits(symbol, sdate);
+CREATE INDEX fdates on prices(fdate);
+CREATE TABLE earnings_calendar(
+symbol text
+, edate date);
+CREATE UNIQUE INDEX earnings_symbol on earnings_calendar(symbol);
+CREATE INDEX edates on earnings_calendar(edate);
